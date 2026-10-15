@@ -793,3 +793,18 @@ TEST_CASE("EnsureOutputLocaleIsCommonArgument", "[command][output-locale]")
     REQUIRE(itr->Type() == ArgumentType::Standard);
 }
 
+TEST_CASE("ParseArguments_Override_WithSpaces", "[command][override][issue-2399]")
+{
+    Args args;
+    TestCommand command({ Argument::ForType(Args::Type::Override) });
+
+    std::vector<std::string> values{ "--override", "/s INSTALLDIR=\"C:\\Program", "Files\\Java\\jre8\"" };
+    Invocation inv{ std::vector<std::string>(values) };
+
+    command.ParseArguments(inv, args);
+
+    REQUIRE(args.Contains(Args::Type::Override));
+    std::string_view overrideValue = args.GetArg(Args::Type::Override);
+    REQUIRE(overrideValue == "/s INSTALLDIR=\"C:\\Program Files\\Java\\jre8\"");
+}
+

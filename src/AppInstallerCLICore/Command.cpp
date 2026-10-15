@@ -504,7 +504,35 @@ namespace AppInstaller::CLI
         // If the previous step indicated a value was needed, set it and forget it.
         if (m_state.Type())
         {
-            m_executionArgs.AddArg(m_state.Type().value(), currArg);
+            // Special handling for Override argument: collect all subsequent non-flag arguments
+            // to handle cases where Windows' command line parser splits quoted paths with spaces
+            if (m_state.Type().value() == Execution::Args::Type::Override)
+            {
+                std::string overrideValue{ currArg };
+                
+                // Collect subsequent non-flag arguments until we hit a flag or end of args
+                while (m_invocationItr != m_invocation.end())
+                {
+                    auto nextArg = Utility::LocIndView{ *m_invocationItr };
+                    
+                    // Stop if we hit a flag argument (starts with -)
+                    if (!nextArg.empty() && nextArg[0] == APPINSTALLER_CLI_ARGUMENT_IDENTIFIER_CHAR)
+                    {
+                        break;
+                    }
+                    
+                    // Append this argument with a space separator
+                    overrideValue += ' ';
+                    overrideValue += nextArg;
+                    ++m_invocationItr;
+                }
+                
+                m_executionArgs.AddArg(m_state.Type().value(), overrideValue);
+            }
+            else
+            {
+                m_executionArgs.AddArg(m_state.Type().value(), currArg);
+            }
             return {};
         }
 
